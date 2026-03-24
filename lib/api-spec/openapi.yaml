@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Hidden Chimney - Carbon-Aware Video Streaming API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: videos
+    description: Video operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,76 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /videos:
+    get:
+      operationId: listVideos
+      tags: [videos]
+      summary: List all uploaded videos
+      description: Returns all uploaded videos with their metadata
+      responses:
+        "200":
+          description: Video list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoListResponse"
+  /videos/upload:
+    post:
+      operationId: uploadVideo
+      tags: [videos]
+      summary: Upload a video
+      description: Upload a video file. FFmpeg will generate a 480p eco version.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                video:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+              required:
+                - video
+      responses:
+        "200":
+          description: Upload successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoUploadResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /videos/{id}:
+    get:
+      operationId: getVideo
+      tags: [videos]
+      summary: Get video by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Video details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoDetailResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +104,61 @@ components:
           type: string
       required:
         - status
-
+    Video:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        originalUrl:
+          type: string
+        ecoUrl:
+          type: string
+        thumbnailUrl:
+          type: string
+        ecoReady:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - originalUrl
+        - ecoUrl
+        - thumbnailUrl
+        - ecoReady
+        - createdAt
+    VideoListResponse:
+      type: object
+      properties:
+        videos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Video"
+      required:
+        - videos
+    VideoUploadResponse:
+      type: object
+      properties:
+        video:
+          $ref: "#/components/schemas/Video"
+        message:
+          type: string
+      required:
+        - video
+        - message
+    VideoDetailResponse:
+      type: object
+      properties:
+        video:
+          $ref: "#/components/schemas/Video"
+      required:
+        - video
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

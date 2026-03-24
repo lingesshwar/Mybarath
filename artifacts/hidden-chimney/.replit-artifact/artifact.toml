@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Hidden Chimney"
+version = "1.0.0"
+id = "artifacts/hidden-chimney"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22795
+
+[services.development]
+run = "pnpm --filter @workspace/hidden-chimney run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hidden-chimney", "run", "build" ]
+publicDir = "artifacts/hidden-chimney/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22795"
+BASE_PATH = "/"

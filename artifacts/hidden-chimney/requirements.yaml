@@ -1,0 +1,20 @@
+packages:
+  "framer-motion": "For cinematic page transitions, hover effects, and smooth layout animations"
+  "react-dropzone": "For the drag-and-drop video upload zone"
+  "lucide-react": "For beautiful consistent iconography across the dark UI"
+  "clsx": "For conditional class name merging"
+  "tailwind-merge": "For safely merging Tailwind utility classes without conflicts"
+  "date-fns": "For formatting video creation dates nicely"
+
+images:
+  - path: "artifacts/hidden-chimney/public/images/logo.png"
+    description: "Minimalist, sleek, geometric logo of a stylized glowing green chimney or exhaust emitting clean digital particles, dark background, cinematic lighting"
+    aspect_ratio: "1:1"
+  - path: "artifacts/hidden-chimney/public/images/hero-bg.png"
+    description: "Abstract cinematic dark background with subtle neon green and deep teal light leaks, technical and digital aesthetic"
+    aspect_ratio: "16:9"
+
+notes:
+  - "The app assumes standard HTML5 video playback for uploaded MP4s"
+  - "The Eco Mode canvas uses a fast O(N) pixel manipulation algorithm to simulate sharpening and contrast enhancement without lagging the browser"
+  - "Custom video player controls are built to handle both the native video element and the canvas overlay seamlessly"

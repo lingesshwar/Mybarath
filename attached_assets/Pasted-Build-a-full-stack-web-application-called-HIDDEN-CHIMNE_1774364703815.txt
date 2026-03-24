@@ -1,0 +1,174 @@
+Build a full-stack web application called:
+
+"HIDDEN CHIMNEY – Carbon-Aware Video Streaming App"
+
+This must be a WORKING application, not just code snippets.
+
+---
+
+## CORE REQUIREMENTS
+
+The app must allow:
+
+1. User can upload a video
+2. Uploaded video appears in the app (homepage list)
+3. Video can be played in two modes:
+
+   * Normal Mode (original quality)
+   * Eco Mode (compressed 480p + visual enhancement)
+
+---
+
+## TECH STACK
+
+* Backend: Node.js + Express
+* Frontend: React (Vite)
+* Styling: Tailwind CSS
+* Video Processing: FFmpeg (fluent-ffmpeg)
+* Upload Handling: Multer
+
+---
+
+## BACKEND FEATURES
+
+### 1. Video Upload
+
+* Create API: POST /upload
+* Accept video file
+* Store in /uploads folder
+
+---
+
+### 2. Video Processing (MANDATORY)
+
+After upload:
+
+* Keep original video
+* Generate 480p version using FFmpeg
+
+Example:
+
+* original.mp4
+* video_480p.mp4
+
+---
+
+### 3. API ENDPOINTS
+
+* GET /videos → list all uploaded videos
+* GET /video/:id → return:
+
+  * original video URL
+  * optimized video URL
+
+---
+
+### 4. Serve Videos
+
+* Serve videos statically from backend
+
+---
+
+## FRONTEND FEATURES
+
+### 1. Home Page
+
+* Display all uploaded videos
+* Show title + thumbnail
+* Click → open player page
+
+---
+
+### 2. Upload Page
+
+* Upload video file
+* After upload → refresh video list
+
+---
+
+### 3. Video Player Page (IMPORTANT)
+
+Include:
+
+* Video player
+* Toggle button:
+
+  [ Normal Mode ] [ Eco Mode ]
+
+---
+
+### 4. Mode Logic
+
+* Normal Mode → play original video
+* Eco Mode → play 480p video
+
+---
+
+### 5. Enhancement (SIMULATED AI)
+
+When Eco Mode is ON:
+
+* Use HTML5 Canvas
+* Draw video frames
+* Apply:
+
+  * sharpening
+  * contrast increase
+  * slight edge enhancement
+
+This must visibly improve quality compared to raw 480p
+
+Do NOT use only CSS filters — use canvas pixel manipulation
+
+---
+
+## UI REQUIREMENTS
+
+* Dark theme
+* Clean layout
+* Responsive design
+* Simple navigation (Home / Upload / Player)
+
+---
+
+## PROJECT STRUCTURE
+
+* /backend
+* /frontend
+* /uploads
+
+---
+
+## IMPORTANT RULES
+
+* Must be runnable inside Replit
+* Must not skip FFmpeg processing
+* Must not return partial implementation
+* Must connect frontend + backend fully
+
+---
+
+## OUTPUT REQUIREMENTS
+
+1. Create full project structure
+2. Implement backend first
+3. Then frontend
+4. Connect everything
+5. Ensure app runs without errors
+
+---
+
+## FINAL GOAL
+
+User flow must work:
+
+1. Upload video
+2. Video appears in homepage
+3. Click video
+4. Play video
+5. Switch between Normal and Eco Mode
+6. See visible quality difference
+
+---
+
+Start building the full working app now.

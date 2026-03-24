@@ -4,6 +4,27 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+## Application: Hidden Chimney
+
+A carbon-aware video streaming app at the root path `/`.
+
+### Features
+- Video upload with drag-and-drop (Multer, 500MB limit)
+- Automatic FFmpeg processing: generates 480p eco version after upload
+- Thumbnail extraction via FFmpeg
+- Video player with two modes:
+  - **Normal Mode**: plays original quality video
+  - **Eco Mode**: plays 480p compressed video rendered through HTML5 Canvas with pixel manipulation (sharpening kernel + contrast boost + edge enhancement)
+- Dark cinematic UI (React + Vite + Tailwind CSS)
+- PostgreSQL DB with Drizzle ORM for video metadata
+
+### Tech Stack
+- Frontend: React + Vite (`artifacts/hidden-chimney`)
+- Backend: Express API server (`artifacts/api-server`)
+- Video processing: fluent-ffmpeg (FFmpeg)
+- Upload handling: Multer
+- Uploads stored at `<project-root>/uploads/`
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
