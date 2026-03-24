@@ -8,11 +8,10 @@ import { formatDuration } from "@/lib/utils";
 
 type PlaybackMode = 'normal' | 'eco';
 
-// Estimated bitrates and carbon rates
+// Estimated bitrates
 const NORMAL_MBPM = 5.0;   // MB per minute at 1080p
 const ECO_MBPM = 1.5;      // MB per minute at 480p
-const NORMAL_CO2_PER_MIN = 0.36; // grams CO2 per minute at 1080p
-const ECO_CO2_PER_MIN = 0.11;    // grams CO2 per minute at 480p
+const EMISSION_FACTOR = 55; // grams CO2 per GB transferred
 
 export default function Player() {
   const [, params] = useRoute("/player/:id");
@@ -209,22 +208,38 @@ export default function Player() {
   }, [mode, isPlaying, aiEnhancement]);
 
   // ==========================================
-  // CHANGE 1: Metrics calculations (frontend)
+  // CHANGE 1: Metrics calculations — real dynamic values
   // ==========================================
-  const watchedMinutes = currentTime / 60;
+  // Bitrate in MB per second
+  const NORMAL_MBPS = NORMAL_MBPM / 60;
+  const ECO_MBPS = ECO_MBPM / 60;
+
   const currentMbpm = mode === 'eco' ? ECO_MBPM : NORMAL_MBPM;
-  const currentCo2pm = mode === 'eco' ? ECO_CO2_PER_MIN : NORMAL_CO2_PER_MIN;
-  const totalDataUsed = currentMbpm * watchedMinutes;
-  const totalCo2 = currentCo2pm * watchedMinutes;
-  const normalDataUsed = NORMAL_MBPM * watchedMinutes;
-  const normalCo2Used = NORMAL_CO2_PER_MIN * watchedMinutes;
-  const dataSaved = mode === 'eco' ? normalDataUsed - totalDataUsed : 0;
-  const co2Saved = mode === 'eco' ? normalCo2Used - totalCo2 : 0;
-  const efficiencyPct = Math.round((1 - ECO_MBPM / NORMAL_MBPM) * 100);
+  const currentMbps = mode === 'eco' ? ECO_MBPS : NORMAL_MBPS;
+
+  // Real data usage: bitrate_MB_per_sec × seconds_watched
+  const totalDataUsed = currentMbps * currentTime;
+  const normalDataUsed = NORMAL_MBPS * currentTime;
+  const ecoDataUsed = ECO_MBPS * currentTime;
+
+  // CO2: data_used_GB × 55 g/GB
+  const totalCo2 = (totalDataUsed / 1024) * EMISSION_FACTOR;
+  const normalCo2Used = (normalDataUsed / 1024) * EMISSION_FACTOR;
+  const ecoCo2Used = (ecoDataUsed / 1024) * EMISSION_FACTOR;
+
+  // CO2 per minute derived from emission factor
+  const currentCo2pm = (currentMbpm / 1024) * EMISSION_FACTOR;
+
+  // Savings: always show real potential (normal - eco) based on current watch time
+  const dataSaved = normalDataUsed - ecoDataUsed;
+  const co2Saved = normalCo2Used - ecoCo2Used;
+  const efficiencyPct = normalDataUsed > 0
+    ? Math.round((dataSaved / normalDataUsed) * 100)
+    : Math.round((1 - ECO_MBPM / NORMAL_MBPM) * 100);
 
   const fmtMB = (mb: number) =>
-    mb >= 1000 ? `${(mb / 1000).toFixed(2)} GB` : `${mb.toFixed(1)} MB`;
-  const fmtCO2 = (g: number) => `${g.toFixed(2)} g`;
+    mb >= 1000 ? `${(mb / 1000).toFixed(2)} GB` : `${mb.toFixed(2)} MB`;
+  const fmtCO2 = (g: number) => g < 0.01 ? `${(g * 1000).toFixed(2)} mg` : `${g.toFixed(3)} g`;
 
   if (isLoading) {
     return (
@@ -526,24 +541,26 @@ export default function Player() {
 
             {/* Savings */}
             <div className="bg-primary/[0.05] border border-primary/10 rounded-2xl p-4">
-              <p className="text-xs font-bold text-primary/70 uppercase tracking-wider mb-3">Savings</p>
+              <p className="text-xs font-bold text-primary/70 uppercase tracking-wider mb-3">
+                Savings {mode === 'normal' && <span className="normal-case font-normal text-yellow-500/70">(potential)</span>}
+              </p>
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Data saved</span>
-                  <span className={`text-xs font-semibold ${mode === 'eco' ? 'text-primary' : 'text-white/30'}`}>
-                    {mode === 'eco' ? fmtMB(dataSaved) : '—'}
+                  <span className={`text-xs font-semibold ${mode === 'eco' ? 'text-primary' : 'text-yellow-500/80'}`}>
+                    {fmtMB(dataSaved)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">CO₂ saved</span>
-                  <span className={`text-xs font-semibold ${mode === 'eco' ? 'text-primary' : 'text-white/30'}`}>
-                    {mode === 'eco' ? fmtCO2(co2Saved) : '—'}
+                  <span className={`text-xs font-semibold ${mode === 'eco' ? 'text-primary' : 'text-yellow-500/80'}`}>
+                    {fmtCO2(co2Saved)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Efficiency</span>
-                  <span className={`text-xs font-bold ${mode === 'eco' ? 'text-primary' : 'text-white/30'}`}>
-                    {mode === 'eco' ? `${efficiencyPct}%` : '—'}
+                  <span className={`text-xs font-bold ${mode === 'eco' ? 'text-primary' : 'text-yellow-500/80'}`}>
+                    {`${efficiencyPct}%`}
                   </span>
                 </div>
               </div>

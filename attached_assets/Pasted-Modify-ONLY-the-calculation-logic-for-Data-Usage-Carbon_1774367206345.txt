@@ -1,0 +1,131 @@
+Modify ONLY the calculation logic for Data Usage, Carbon Emission, and Savings to use REAL dynamic values based on video playback.
+
+DO NOT change UI, layout, structure, or any other functionality.
+
+---
+
+## ⚠️ STRICT RULES
+
+* Do NOT redesign UI
+* Do NOT modify layout
+* Do NOT remove existing fields
+* ONLY update calculation logic
+* Keep all existing components intact
+
+---
+
+## 🔹 REQUIREMENT 1 — REAL DATA USAGE
+
+Replace static values with dynamic calculation.
+
+Use:
+
+* video.currentTime (seconds watched)
+* video.duration (total duration)
+* bitrate (MB per minute)
+
+---
+
+### CALCULATION:
+
+Convert bitrate:
+
+bitrate_MB_per_sec = bitrate_MB_per_min / 60
+
+Then:
+
+data_used_MB = bitrate_MB_per_sec × currentTime
+
+total_video_data_MB = bitrate_MB_per_sec × duration
+
+---
+
+### UPDATE UI:
+
+* Per minute → keep as is
+* Total used → update dynamically based on currentTime
+* If Normal → calculate using 1080p bitrate
+
+---
+
+## 🔹 REQUIREMENT 2 — REAL CARBON EMISSION
+
+Use:
+
+emission_factor = 55 g per GB
+
+Convert:
+
+data_used_GB = data_used_MB / 1024
+
+Then:
+
+CO2_emission = data_used_GB × 55
+
+---
+
+### UPDATE UI:
+
+* CO₂ per min → keep
+* Total emitted → update dynamically
+* If Normal → calculate using normal mode data
+
+---
+
+## 🔹 REQUIREMENT 3 — REAL SAVINGS
+
+Calculate difference between:
+
+Normal Mode (1080p)
+vs
+Eco Mode (480p)
+
+---
+
+### CALCULATIONS:
+
+data_saved_MB = normal_data_MB - eco_data_MB
+
+CO2_saved = normal_CO2 - eco_CO2
+
+efficiency = (data_saved_MB / normal_data_MB) × 100
+
+---
+
+### UPDATE UI:
+
+Replace:
+
+Data saved → show real value (NOT 0.0)
+CO₂ saved → show real value
+Efficiency → real %
+
+If in Normal Mode:
+
+* Show potential savings instead of dashes
+
+---
+
+## 🔹 REQUIREMENT 4 — LIVE UPDATE
+
+All values must update in real-time:
+
+* when video plays
+* when user seeks
+* when switching modes
+* when AI enhancement toggles
+
+Use video timeupdate event
+
+---
+
+## 🔹 FINAL RESULT
+
+* No more static values (0.0 MB, 0.00 g)
+* All numbers reflect real playback
+* Savings visibly change between modes
+* System feels realistic and accurate
+
+---
+
+Implement ONLY these calculation changes and ensure app runs without breaking anything.
