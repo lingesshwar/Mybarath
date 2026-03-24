@@ -55,17 +55,23 @@ export default function Player() {
   };
 
   // Sync state with video element
+  // Depends on `data` so listeners attach AFTER the video element is rendered
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handleTimeUpdate = () => {
       setCurrentTime(video.currentTime);
-      setProgress((video.currentTime / video.duration) * 100);
+      const dur = video.duration;
+      if (dur && !isNaN(dur) && dur > 0) {
+        setProgress((video.currentTime / dur) * 100);
+      }
     };
 
-    const handleDurationChange = () => {
-      setDuration(video.duration);
+    const handleMetadata = () => {
+      if (video.duration && !isNaN(video.duration)) {
+        setDuration(video.duration);
+      }
     };
 
     const handleEnded = () => setIsPlaying(false);
@@ -73,19 +79,21 @@ export default function Player() {
     const handlePause = () => setIsPlaying(false);
 
     video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('durationchange', handleDurationChange);
+    video.addEventListener('loadedmetadata', handleMetadata);
+    video.addEventListener('durationchange', handleMetadata);
     video.addEventListener('ended', handleEnded);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
 
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('durationchange', handleDurationChange);
+      video.removeEventListener('loadedmetadata', handleMetadata);
+      video.removeEventListener('durationchange', handleMetadata);
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
     };
-  }, []);
+  }, [data]);
 
   // Handle Seek
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {

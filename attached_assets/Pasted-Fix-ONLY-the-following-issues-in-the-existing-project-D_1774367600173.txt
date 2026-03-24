@@ -1,0 +1,168 @@
+Fix ONLY the following issues in the existing project. Do NOT modify anything else.
+
+---
+
+## ⚠️ STRICT RULES
+
+* Do NOT change UI design
+* Do NOT change layout
+* Do NOT rewrite components
+* ONLY fix:
+
+  1. Video time not updating (00:00 issue)
+  2. Data usage & CO₂ not updating (still 0.0)
+
+---
+
+## 🔹 FIX 1 — VIDEO TIME NOT WORKING
+
+Ensure the video element correctly tracks time.
+
+---
+
+### REQUIREMENTS:
+
+1. Add event listener:
+
+video.addEventListener("timeupdate", handleTimeUpdate)
+
+2. Also ensure:
+
+video.addEventListener("loadedmetadata", () => {
+setDuration(video.duration)
+})
+
+---
+
+### HANDLE FUNCTION:
+
+Inside handleTimeUpdate:
+
+* Get current time:
+
+const currentTime = video.currentTime
+
+* Update state:
+
+setCurrentTime(currentTime)
+
+---
+
+### FORMAT TIME FUNCTION:
+
+Convert seconds → mm:ss:
+
+function formatTime(seconds) {
+const mins = Math.floor(seconds / 60)
+const secs = Math.floor(seconds % 60)
+return `${mins}:${secs < 10 ? "0" : ""}${secs}`
+}
+
+---
+
+### UI FIX:
+
+* Replace static "00:00"
+* Show:
+
+formatTime(currentTime) / formatTime(duration)
+
+---
+
+## 🔹 FIX 2 — REAL DATA CALCULATION NOT WORKING
+
+Your issue: values stay 0.0 → calculations not triggered
+
+---
+
+### IMPORTANT:
+
+Use React state:
+
+* currentTime
+* duration
+* bitrate
+
+---
+
+### CALCULATIONS (INSIDE useEffect):
+
+Trigger when:
+[currentTime, mode]
+
+---
+
+### IMPLEMENT:
+
+const bitratePerSec = bitrate / 60
+
+const dataUsed = bitratePerSec * currentTime
+
+const totalData = bitratePerSec * duration
+
+---
+
+### CARBON:
+
+const dataUsedGB = dataUsed / 1024
+
+const co2 = dataUsedGB * 55
+
+---
+
+### NORMAL MODE COMPARISON:
+
+const normalBitrate = 5.0
+const ecoBitrate = 1.5
+
+const normalData = (normalBitrate / 60) * currentTime
+const ecoData = (ecoBitrate / 60) * currentTime
+
+---
+
+### SAVINGS:
+
+const dataSaved = normalData - ecoData
+
+const co2Saved = (normalData / 1024 * 55) - (ecoData / 1024 * 55)
+
+const efficiency = (dataSaved / normalData) * 100
+
+---
+
+### UPDATE UI STATE:
+
+setMetrics({
+dataUsed,
+totalData,
+co2,
+dataSaved,
+co2Saved,
+efficiency
+})
+
+---
+
+## 🔹 FIX 3 — ENSURE LIVE UPDATES
+
+Wrap calculation inside:
+
+useEffect(() => {
+if (!currentTime) return
+// calculations here
+}, [currentTime, mode])
+
+---
+
+## 🔹 FINAL RESULT
+
+After fix:
+
+* Timer shows real time (not 00:00)
+* Data usage increases while video plays
+* CO₂ increases dynamically
+* Savings update correctly when switching modes
+
+---
+
+Do NOT modify anything else. Only fix these issues and ensure app runs correctly.
