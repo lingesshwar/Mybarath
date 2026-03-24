@@ -2,11 +2,17 @@ import { useState, useRef, useEffect } from "react";
 import { useRoute } from "wouter";
 import { useGetVideo } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Leaf, Play, Pause, Volume2, VolumeX, Maximize, AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { Leaf, Play, Pause, Volume2, VolumeX, Maximize, AlertCircle, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { formatDuration } from "@/lib/utils";
 
 type PlaybackMode = 'normal' | 'eco';
+
+// Estimated bitrates and carbon rates
+const NORMAL_MBPM = 5.0;   // MB per minute at 1080p
+const ECO_MBPM = 1.5;      // MB per minute at 480p
+const NORMAL_CO2_PER_MIN = 0.36; // grams CO2 per minute at 1080p
+const ECO_CO2_PER_MIN = 0.11;    // grams CO2 per minute at 480p
 
 export default function Player() {
   const [, params] = useRoute("/player/:id");
@@ -15,6 +21,8 @@ export default function Player() {
   const { data, isLoading, isError } = useGetVideo(videoId);
   
   const [mode, setMode] = useState<PlaybackMode>('normal');
+  // CHANGE 2: AI Enhancement is OFF by default, separate from Eco Mode
+  const [aiEnhancement, setAiEnhancement] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -111,11 +119,12 @@ export default function Player() {
   };
 
   // ==========================================
-  // MANDATORY: HTML5 Canvas Pixel Manipulation 
-  // for "Eco Mode" Simulation
+  // MANDATORY: HTML5 Canvas Pixel Manipulation
+  // for "Eco Mode + AI Enhancement" Simulation
+  // CHANGE 2: Canvas only runs when BOTH eco mode AND aiEnhancement are ON
   // ==========================================
   useEffect(() => {
-    if (mode !== 'eco') {
+    if (mode !== 'eco' || !aiEnhancement) {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       return;
     }
@@ -197,8 +206,25 @@ export default function Player() {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [mode, isPlaying]);
+  }, [mode, isPlaying, aiEnhancement]);
 
+  // ==========================================
+  // CHANGE 1: Metrics calculations (frontend)
+  // ==========================================
+  const watchedMinutes = currentTime / 60;
+  const currentMbpm = mode === 'eco' ? ECO_MBPM : NORMAL_MBPM;
+  const currentCo2pm = mode === 'eco' ? ECO_CO2_PER_MIN : NORMAL_CO2_PER_MIN;
+  const totalDataUsed = currentMbpm * watchedMinutes;
+  const totalCo2 = currentCo2pm * watchedMinutes;
+  const normalDataUsed = NORMAL_MBPM * watchedMinutes;
+  const normalCo2Used = NORMAL_CO2_PER_MIN * watchedMinutes;
+  const dataSaved = mode === 'eco' ? normalDataUsed - totalDataUsed : 0;
+  const co2Saved = mode === 'eco' ? normalCo2Used - totalCo2 : 0;
+  const efficiencyPct = Math.round((1 - ECO_MBPM / NORMAL_MBPM) * 100);
+
+  const fmtMB = (mb: number) =>
+    mb >= 1000 ? `${(mb / 1000).toFixed(2)} GB` : `${mb.toFixed(1)} MB`;
+  const fmtCO2 = (g: number) => `${g.toFixed(2)} g`;
 
   if (isLoading) {
     return (
@@ -230,6 +256,10 @@ export default function Player() {
   // Determine which source URL to play in the hidden video element
   const videoSrc = mode === 'eco' && video.ecoReady ? video.ecoUrl : video.originalUrl;
 
+  // CHANGE 2: Canvas is only shown when eco + AI enhancement is on
+  const showCanvas = mode === 'eco' && aiEnhancement;
+  const showVideo = !showCanvas;
+
   return (
     <div className="min-h-[calc(100vh-80px)] bg-black/50 py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -246,7 +276,7 @@ export default function Player() {
           {/* Mode Switcher */}
           <div className="flex p-1 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 self-start sm:self-auto shadow-xl">
             <button
-              onClick={() => setMode('normal')}
+              onClick={() => { setMode('normal'); setAiEnhancement(false); }}
               className={`
                 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300
                 ${mode === 'normal' 
@@ -287,21 +317,22 @@ export default function Player() {
           <video
             ref={videoRef}
             src={videoSrc}
-            crossOrigin="anonymous" // Needed for canvas pixel extraction if cross-origin
-            className={`w-full h-full object-contain ${mode === 'eco' ? 'hidden' : 'block'}`}
+            crossOrigin="anonymous"
+            className={`w-full h-full object-contain ${showVideo ? 'block' : 'hidden'}`}
             playsInline
             muted={isMuted}
             onClick={togglePlay}
           />
 
-          {/* The Canvas for Eco Mode */}
+          {/* The Canvas for Eco Mode + AI Enhancement */}
           <canvas
             ref={canvasRef}
             onClick={togglePlay}
-            className={`w-full h-full object-contain cursor-pointer ${mode === 'normal' ? 'hidden' : 'block'}`}
+            className={`w-full h-full object-contain cursor-pointer ${showCanvas ? 'block' : 'hidden'}`}
           />
 
           {/* Eco Mode Badges */}
+          {/* CHANGE 2: Badge reflects AI enhancement state */}
           <AnimatePresence>
             {mode === 'eco' && (
               <motion.div 
@@ -310,15 +341,23 @@ export default function Player() {
                 exit={{ opacity: 0 }}
                 className="absolute top-6 left-6 flex flex-col gap-2 pointer-events-none"
               >
-                <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-primary/30 text-xs font-bold text-primary flex items-center gap-2 shadow-lg shadow-primary/20">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                  </span>
-                  Simulated AI Enhancement Active
-                </div>
-                <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-medium text-white shadow-lg w-fit">
-                  Carbon saved: ~45%
+                <div className={`px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border text-xs font-bold flex items-center gap-2 shadow-lg ${aiEnhancement ? 'border-primary/30 text-primary shadow-primary/20' : 'border-white/20 text-white/70'}`}>
+                  {aiEnhancement ? (
+                    <>
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                      </span>
+                      Enhanced 480p
+                    </>
+                  ) : (
+                    <>
+                      <span className="relative flex h-2 w-2">
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white/50"></span>
+                      </span>
+                      Raw 480p
+                    </>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -375,6 +414,138 @@ export default function Player() {
                 >
                   <Maximize className="w-5 h-5" />
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CHANGE 2: AI Enhancement button — only visible in Eco Mode */}
+        <AnimatePresence>
+          {mode === 'eco' && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="flex items-center justify-between bg-card border border-white/5 rounded-2xl px-5 py-4 shadow-lg"
+            >
+              <div className="flex items-center gap-3">
+                <Sparkles className={`w-5 h-5 ${aiEnhancement ? 'text-primary' : 'text-muted-foreground'}`} />
+                <div>
+                  <p className="text-sm font-semibold text-white">AI Enhancement</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {aiEnhancement ? 'Canvas sharpening + contrast boost active' : 'Raw 480p — AI processing disabled'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAiEnhancement(prev => !prev)}
+                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 ${
+                  aiEnhancement
+                    ? 'bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30'
+                    : 'bg-white/5 text-white border border-white/10 hover:bg-primary/10 hover:text-primary hover:border-primary/30'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                {aiEnhancement ? 'Disable AI Enhancement' : 'Enable AI Enhancement'}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* CHANGE 1: Detailed Metrics Analytics Panel */}
+        <div className="bg-card border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Leaf className="w-4 h-4 text-primary" />
+            </div>
+            <h2 className="text-lg font-bold text-white">Streaming Analytics</h2>
+            <span className={`ml-auto text-xs font-bold px-2.5 py-1 rounded-full border ${mode === 'eco' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-white/5 text-white/60 border-white/10'}`}>
+              {mode === 'eco' ? 'Eco Mode Active' : 'Normal Mode'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Current Streaming Info */}
+            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Streaming Info</p>
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Quality</span>
+                  <span className="text-xs font-semibold text-white">{mode === 'eco' ? '480p' : '1080p'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Mode</span>
+                  <span className={`text-xs font-semibold ${mode === 'eco' ? 'text-primary' : 'text-white'}`}>
+                    {mode === 'eco' ? (aiEnhancement ? 'Eco + AI' : 'Eco') : 'Normal'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Bitrate</span>
+                  <span className="text-xs font-semibold text-white">{currentMbpm.toFixed(1)} MB/min</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Data Usage */}
+            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Data Usage</p>
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Per minute</span>
+                  <span className="text-xs font-semibold text-white">{currentMbpm.toFixed(1)} MB/min</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Total used</span>
+                  <span className="text-xs font-semibold text-white">{fmtMB(totalDataUsed)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">If Normal</span>
+                  <span className="text-xs font-semibold text-white/50">{fmtMB(normalDataUsed)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Carbon Emission */}
+            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Carbon Emission</p>
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">CO₂ per min</span>
+                  <span className="text-xs font-semibold text-white">{currentCo2pm.toFixed(2)} g/min</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Total emitted</span>
+                  <span className="text-xs font-semibold text-white">{fmtCO2(totalCo2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">If Normal</span>
+                  <span className="text-xs font-semibold text-white/50">{fmtCO2(normalCo2Used)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Savings */}
+            <div className="bg-primary/[0.05] border border-primary/10 rounded-2xl p-4">
+              <p className="text-xs font-bold text-primary/70 uppercase tracking-wider mb-3">Savings</p>
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Data saved</span>
+                  <span className={`text-xs font-semibold ${mode === 'eco' ? 'text-primary' : 'text-white/30'}`}>
+                    {mode === 'eco' ? fmtMB(dataSaved) : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">CO₂ saved</span>
+                  <span className={`text-xs font-semibold ${mode === 'eco' ? 'text-primary' : 'text-white/30'}`}>
+                    {mode === 'eco' ? fmtCO2(co2Saved) : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Efficiency</span>
+                  <span className={`text-xs font-bold ${mode === 'eco' ? 'text-primary' : 'text-white/30'}`}>
+                    {mode === 'eco' ? `${efficiencyPct}%` : '—'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

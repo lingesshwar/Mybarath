@@ -1,0 +1,134 @@
+Modify the EXISTING project WITHOUT changing any other functionality, structure, or UI. Only implement the following two changes.
+
+---
+
+## ⚠️ IMPORTANT RULES
+
+* DO NOT rewrite the project
+* DO NOT change existing APIs
+* DO NOT change layout or styling except where required
+* DO NOT remove any current feature
+* ONLY modify the specified parts
+
+---
+
+## 🔹 CHANGE 1 — UPGRADE METRICS DISPLAY
+
+Currently, the app shows only a simple percentage (e.g., "Carbon saved: 45%").
+
+Replace ONLY this section with a detailed analytics panel.
+
+---
+
+### ADD THE FOLLOWING DETAILS (in same area/UI card)
+
+Display:
+
+1. Current Streaming Info:
+
+   * Current Quality (1080p / 480p)
+   * Streaming Mode (Normal / Eco)
+
+2. Data Usage:
+
+   * Data per minute (MB/min)
+   * Total data used
+   * Original vs Eco comparison
+
+3. Carbon Emission:
+
+   * Current CO2 (g/min)
+   * Total CO2 emitted
+   * Original vs Eco emission
+
+4. Savings:
+
+   * Data saved (MB or GB)
+   * CO2 saved (grams)
+   * Efficiency (%)
+
+---
+
+### NOTE
+
+* Use existing backend values if already available
+* If not, calculate in frontend using current logic
+* Keep styling consistent with current UI (dark theme)
+* Replace only the percentage display, not the entire layout
+
+---
+
+## 🔹 CHANGE 2 — SEPARATE ECO MODE AND AI ENHANCEMENT
+
+Currently, AI enhancement is automatically active.
+
+Modify ONLY the player logic as follows:
+
+---
+
+### STEP 1 — MODES
+
+Keep existing mode toggle:
+
+* Normal Mode:
+
+  * Play 1080p
+  * AI Enhancement OFF
+
+* Eco Mode:
+
+  * Play 480p
+  * AI Enhancement OFF by default
+
+---
+
+### STEP 2 — ADD BUTTON
+
+Inside Eco Mode ONLY:
+
+Add a button:
+"Enable AI Enhancement"
+
+---
+
+### STEP 3 — LOGIC
+
+* Eco Mode + AI OFF:
+
+  * Play raw 480p video
+
+* Eco Mode + AI ON:
+
+  * Activate canvas enhancement
+  * Apply existing filters
+
+---
+
+### STEP 4 — UI STATUS
+
+Display:
+
+* AI Enhancement: OFF → “Raw 480p”
+* AI Enhancement: ON → “Enhanced 480p”
+
+---
+
+### STEP 5 — METRICS BEHAVIOR
+
+* AI ON should NOT change data usage
+* Only perceived quality changes
+
+---
+
+## ✅ FINAL REQUIREMENT
+
+Everything else in the project must remain EXACTLY the same.
+
+Only:
+
+1. Replace percentage with detailed metrics
+2. Add AI toggle inside Eco Mode
+
+Do not modify anything else.
+
+Implement changes cleanly and ensure app still runs without errors.
