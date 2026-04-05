@@ -34,6 +34,7 @@ export default function Player() {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const wasPlayingRef = useRef(false);
 
   // Initialize Eco mode safely if available
   useEffect(() => {
@@ -41,6 +42,41 @@ export default function Player() {
       setMode('eco');
     }
   }, [data?.video?.ecoReady]);
+
+  // Handle mode switch with smooth source transition
+  const handleModeSwitch = (newMode: PlaybackMode) => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    // Save playback state before switching
+    wasPlayingRef.current = isPlaying;
+    
+    // Pause video to allow source change
+    video.pause();
+    
+    // Switch mode (which updates videoSrc)
+    setMode(newMode);
+    if (newMode === 'normal') {
+      setAiEnhancement(false);
+    }
+  };
+
+  // Resume playback after video source loads
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleCanPlay = () => {
+      if (wasPlayingRef.current) {
+        video.play().catch(() => {
+          // Ignore play() errors (browser autoplay restrictions, etc)
+        });
+      }
+    };
+
+    video.addEventListener('canplay', handleCanPlay);
+    return () => video.removeEventListener('canplay', handleCanPlay);
+  }, []);
 
   // Handle Play/Pause
   const togglePlay = () => {
@@ -299,7 +335,7 @@ export default function Player() {
           {/* Mode Switcher */}
           <div className="flex p-1 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 self-start sm:self-auto shadow-xl">
             <button
-              onClick={() => { setMode('normal'); setAiEnhancement(false); }}
+              onClick={() => handleModeSwitch('normal')}
               className={`
                 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300
                 ${mode === 'normal' 
@@ -311,7 +347,7 @@ export default function Player() {
             </button>
             <button
               onClick={() => {
-                if (video.ecoReady) setMode('eco');
+                if (video.ecoReady) handleModeSwitch('eco');
               }}
               disabled={!video.ecoReady}
               className={`
