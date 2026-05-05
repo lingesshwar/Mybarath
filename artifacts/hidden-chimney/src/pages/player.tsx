@@ -35,6 +35,7 @@ export default function Player() {
   const animationRef = useRef<number>();
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
   const wasPlayingRef = useRef(false);
+  const pendingModeRef = useRef<PlaybackMode | null>(null);
 
   // Initialize Eco mode safely if available
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function Player() {
     
     // Save playback state before switching
     wasPlayingRef.current = isPlaying;
+    pendingModeRef.current = newMode;
     
     // Pause video to allow source change
     video.pause();
@@ -61,22 +63,21 @@ export default function Player() {
     }
   };
 
-  // Resume playback after video source loads
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const handleCanPlay = () => {
-      if (wasPlayingRef.current) {
-        video.play().catch(() => {
-          // Ignore play() errors (browser autoplay restrictions, etc)
-        });
+    const handleLoadedData = () => {
+      if (pendingModeRef.current !== mode) {
+        pendingModeRef.current = null;
       }
+      if (!wasPlayingRef.current) return;
+      video.play().catch(() => {});
     };
 
-    video.addEventListener('canplay', handleCanPlay);
-    return () => video.removeEventListener('canplay', handleCanPlay);
-  }, []);
+    video.addEventListener('loadeddata', handleLoadedData);
+    return () => video.removeEventListener('loadeddata', handleLoadedData);
+  }, [mode]);
 
   // Handle Play/Pause
   const togglePlay = () => {
@@ -380,6 +381,7 @@ export default function Player() {
             className={`w-full h-full object-contain ${showVideo ? 'block' : 'hidden'}`}
             playsInline
             muted={isMuted}
+            key={videoSrc}
             onClick={togglePlay}
           />
 
