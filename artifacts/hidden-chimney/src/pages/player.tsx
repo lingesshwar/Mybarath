@@ -92,7 +92,7 @@ export default function Player() {
   };
 
   // Sync state with video element
-  // Depends on `data` so listeners attach AFTER the video element is rendered
+  // Re-attaches whenever mode changes (which remounts the video via key={videoSrc})
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -130,7 +130,7 @@ export default function Player() {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
     };
-  }, [data]);
+  }, [mode]);
 
   // Handle Seek
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
